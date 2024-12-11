@@ -6,7 +6,7 @@ from PIL import Image
 # 参数设置
 image_size = 64  # 图像大小
 unit_size = 16  # 光栅单元大小
-X = 10 # 缩放系数（调整此值以提高衬比度）
+zoom = 10 # 缩放系数（调整此值以提高衬比度）
 
 # 加载图像
 image_path = 'test.bmp'
@@ -85,7 +85,7 @@ reconstructed_image = reconstructed_image[N*3/8 : N*5/8, N*3/8 : N*5/8]
 # 处理重建图像以提高衬比度
 re_max = cp.max(reconstructed_image)
 re_min = cp.min(reconstructed_image)
-cp.clip(reconstructed_image, re_min, re_max/10, out=reconstructed_image)
+cp.clip(reconstructed_image, re_min, re_max/zoom, out=reconstructed_image)
 reconstructed_image = reconstructed_image / cp.max(reconstructed_image) * 255
 
 # 将重建图像转换为CPU上的numpy数组以便显示
