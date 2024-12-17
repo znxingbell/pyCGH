@@ -6,10 +6,12 @@ from PIL import Image
 # 参数设置
 image_size = 256  # 图像大小
 wave_length = 0.632e-6  # 波长，单位m
-pix = 0.00465 # CCD像素宽度
-reference_angle = 0.5 # 参考光角度的sin值
-reconstruct_angle = 0  # 重建角度的sin值
-zoom = 200 # 缩放系数（调整此值以提高衬比度）
+pix = 4.65e-6 # CCD像素宽度，单位m
+N = 1024  # 采样率
+distance = 1  # 传播距离，单位m
+L = N * pix         # CCD宽度
+L0 = wave_length * distance / pix # 重建像平面宽度
+zoom = 10 # 缩放系数（调整此值以提高衬比度）
 
 
 # 加载图像
@@ -18,28 +20,49 @@ image = Image.open(image_path).convert('L')
 image = image.resize((image_size, image_size))
 image_array = np.array(image)
 
-# 展示初始图像
+# 匹配CCD平面的大小
+padded_array = cp.zeros((N, N))
+start = (N - image_size) // 2
+padded_array[start:start+image_size, start:start+image_size] = cp.array(image_array)
+
+# 展示原始图像
+image_array = cp.asnumpy(padded_array)
 plt.imshow(image_array, cmap='gray')
-plt.title('Custom Image')
+plt.title('Origin Image')
 plt.colorbar()
 plt.show()
 
 # 创建带有随机相位的物体场（模拟自然光漫反射）
-random_phase = cp.random.rand(image_size, image_size)
-object_field = cp.array(image_array) * cp.exp(1j * 2 * cp.pi * random_phase)
+random_phase = cp.random.rand(N, N)
+object_field = padded_array * cp.exp(1j * 2 * cp.pi * random_phase)
 
-# 计算振幅和相位
-hologram = cp.fft.fftshift(cp.fft.fft2(cp.fft.fftshift(object_field)))
-hologram_amplitude = cp.abs(hologram)
-hologram_amplitude = hologram_amplitude / cp.max(hologram_amplitude)
-hologram_phase = cp.angle(hologram)
+# 计算传播到CCD平面的物体场
+k = 2 * np.pi / wave_length
+x = cp.linspace(-L0/2, L0/2, N)
+y = cp.linspace(-L0/2, L0/2, N)
+X, Y = cp.meshgrid(x, y)
+H = cp.exp(1j * k / (2 * distance) * (cp.power(X, 2) + cp.power(Y, 2)))
+U1 = object_field * H
+U2 = cp.fft.fftshift(cp.fft.fft2(cp.fft.fftshift(U1)))
+x = cp.linspace(-L/2, L/2, N)
+y = cp.linspace(-L/2, L/2, N)
+X, Y = cp.meshgrid(x, y)
+phase = cp.exp(1j * k * distance) / (1j * wave_length * distance) * cp.exp(1j * k / 2 / distance * (cp.power(X, 2) + cp.power(Y, 2)))
+U2 = U2 * phase
+
+# 参考光
+Qx = (4 - 2.5) * L0 / 8 / distance
+Qy = Qx
+x = cp.linspace(-L/2, L/2 - L/N, N)
+y = x
+X, Y = cp.meshgrid(x, y)
+reference_light = cp.max(cp.abs(U2)) * cp.exp(1j * k * (X * Qx + Y * Qy))
+reference_phase = cp.angle(reference_light)
 
 # 编码全息图
-frequency_x =  reference_angle / wave_length
-total_size = image_size * pix
-x_range = cp.linspace(-total_size/2, total_size/2, image_size)
-phase_factor = cp.cos(2 * cp.pi * frequency_x * x_range - hologram_phase)
-encoded_hologram = (1 + hologram_amplitude * phase_factor) / 2
+U = U2 + reference_light
+I = cp.abs(U * cp.conj(U))
+encoded_hologram = I / cp.max(I) * 255
 
 # 将编码后的全息图转换为CPU上的numpy数组以便显示
 encoded_hologram_cpu = cp.asnumpy(encoded_hologram)
@@ -51,14 +74,22 @@ plt.colorbar()
 plt.show()
 
 # 保存编码后的全息图
-encoded_hologram_save = Image.fromarray((encoded_hologram_cpu * 255).astype(np.uint8))
+encoded_hologram_save = Image.fromarray((encoded_hologram_cpu).astype(np.uint8))
 encoded_hologram_save.save('encoded_hologram.png')
 
-# 平行参考光重建图像
-reconstruct_frequency = reconstruct_angle / wave_length
-reference_field = cp.exp(1j * 2 * cp.pi * reconstruct_frequency * x_range)
-reconstructed_field = cp.fft.fftshift(cp.fft.fft2(encoded_hologram * reference_field))
-reconstructed_image = cp.abs(reconstructed_field)
+# 重建图像
+x = cp.linspace(-L/2, L/2, N)
+y = cp.linspace(-L/2, L/2, N)
+X, Y = cp.meshgrid(x, y)
+H = cp.exp(-1j * k / (2 * distance) * (cp.power(X, 2) + cp.power(Y, 2)))
+U3 = encoded_hologram * H
+U4 = cp.fft.fftshift(cp.fft.ifft2(cp.fft.fftshift(U3)))
+x = cp.linspace(-L/2, L/2, N)
+y = cp.linspace(-L/2, L/2, N)
+X, Y = cp.meshgrid(x, y)
+phase = cp.exp(-1j * k * distance) / (-1j * wave_length * distance) * cp.exp(-1j * k / 2 / distance * (cp.power(X, 2) + cp.power(Y, 2)))
+U4 = U4 * phase
+reconstructed_image = cp.abs(U4)
 
 # 处理重建图像以提高衬比度
 re_max = cp.max(reconstructed_image)
