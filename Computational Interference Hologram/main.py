@@ -11,7 +11,7 @@ N = 1024  # 采样率
 distance = 1  # 传播距离，单位m
 L = N * pix         # CCD宽度
 L0 = wave_length * distance / pix # 重建像平面宽度
-zoom = 10 # 缩放系数（调整此值以提高衬比度）
+zoom = 50 # 缩放系数（调整此值以提高衬比度）
 
 
 # 加载图像
@@ -57,12 +57,12 @@ x = cp.linspace(-L/2, L/2 - L/N, N)
 y = x
 X, Y = cp.meshgrid(x, y)
 reference_light = cp.max(cp.abs(U2)) * cp.exp(1j * k * (X * Qx + Y * Qy))
-reference_phase = cp.angle(reference_light)
 
 # 编码全息图
-U = U2 + reference_light
-I = cp.abs(U * cp.conj(U))
-encoded_hologram = I / cp.max(I) * 255
+object_amplitude = cp.abs(U2) / cp.max(cp.abs(U2))
+object_phase = cp.angle(U2)
+reference_phase = cp.angle(reference_light)
+encoded_hologram = (1 + object_amplitude * cp.cos(reference_phase - object_phase)) / 2
 
 # 将编码后的全息图转换为CPU上的numpy数组以便显示
 encoded_hologram_cpu = cp.asnumpy(encoded_hologram)
