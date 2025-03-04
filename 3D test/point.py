@@ -39,15 +39,16 @@ k = 2 * cp.pi / wave_length
 reference_phase = k * (x * cp.sin(cp.radians(thetax)) + y * cp.sin(cp.radians(thetay)))
 
 # 计算全息图=======================================================
-h = cp.zeros((M, N), dtype=cp.float32)
+point = cp.zeros((M, N), dtype=cp.complex64)
 point_amount = coordinate.shape[0]
 factor1 = cp.pi / wave_length / z
 factor2 = x**2 + y**2
 for i in tqdm(range(point_amount), desc="全息图计算进度"):
     x0, y0, z0 = coordinate[i, 0], coordinate[i, 1], coordinate[i, 2]
     p0 = cp.random.rand() * 2 * cp.pi
-    point_phase = p0 + factor1 * (factor2 + (x0**2 + y0**2) - 2 * (x0 * x + y0 * y))
-    h += (1 + cp.cos(reference_phase - point_phase)) / 2
+    point += cp.exp(1j * (p0 + factor1 * (factor2 + (x0**2 + y0**2) - 2 * (x0 * x + y0 * y))))
+point_phase = cp.angle(point)
+h = (1 + cp.cos(reference_phase - point_phase)) / 2
 minh, maxh = cp.min(h), cp.max(h)
 I = (h - minh) / (maxh - minh)
 
