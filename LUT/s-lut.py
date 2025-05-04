@@ -24,12 +24,15 @@ data = data @ mat
 data[:, 0] *= zoom
 data[:, 1] *= zoom
 data[:, 2] = z - data[:, 2] * zoom
-data[:, 0] = (data[:, 0]/pix).astype(int)
-data[:, 1] = (data[:, 1]/pix).astype(int)
+data[:, 0] = (data[:, 0]/pix)
+data[:, 1] = (data[:, 1]/pix)
+zpix = (cp.max(data[:, 2]) - cp.min(data[:, 2])) /100
+data[:, 2] = (data[:, 2]/zpix)
+data = data.astype(cp.int16)
 
 #generate reference light
-X = cp.arange(-N // 2, N // 2)
-Y = cp.arange(-M // 2, M // 2)
+X = cp.arange(-N // 2, N // 2, dtype=cp.int16)
+Y = cp.arange(-M // 2, M // 2, dtype=cp.int16)
 x, y = cp.meshgrid(X, Y)
 sin_thx = cp.sin(cp.radians(thx))
 sin_thy = cp.sin(cp.radians(thy))
@@ -38,17 +41,23 @@ ref_ph = vec * (x * sin_thx + y * sin_thy) * pix
 #generate s-lut
 max_x = cp.max(cp.abs(data[:, 0]))
 max_y = cp.max(cp.abs(data[:, 1]))
-del_x = cp.arange(0, max_x + (M // 2)*pix, pix)
-del_y = cp.arange(0, max_y + (N // 2)*pix, pix)
-H = cp.exp(1j * vec * cp.sqrt(del_x**2 + z**2))
-V = cp.exp(1j * vec * cp.sqrt(del_y**2 + z**2))
+del_x = cp.arange(0, max_x + (M // 2))
+del_y = cp.arange(0, max_y + (N // 2))
+Hs = {}
+Vs = {}
+slice = cp.arange(cp.min(data[:, 2]).get(), cp.max(data[:, 2]).get() + 1)
+for i in slice:
+    zi = i * zpix
+    Hs[i.item()] = cp.exp(1j * vec * cp.sqrt((del_x*pix)**2 + zi**2)).astype(cp.complex64)
+    Vs[i.item()] = cp.exp(1j * vec * cp.sqrt((del_y*pix)**2 + zi**2)).astype(cp.complex64)
 
 #generate hologram
 amp = cp.zeros((M, N), dtype=cp.complex64)
-point_amount = data.shape[0]
-for i in tqdm(range(point_amount), desc="calculating"):
-    x_idx = cp.abs(data[i, 0] - x).astype(int)
-    y_idx = cp.abs(data[i, 1] - y).astype(int)
+for j in tqdm(range(data.shape[0]), desc="calculating"):
+    x_idx = cp.abs(data[j, 0] - x)
+    y_idx = cp.abs(data[j, 1] - y)
+    H = Hs[data[j, 2].item()]
+    V = Vs[data[j, 2].item()]
     amp += H[x_idx] * V[y_idx]
 ph = cp.angle(amp)
 inf = (1 + cp.cos(ref_ph - ph)) / 2
@@ -78,7 +87,7 @@ U4 = U4 * phase
 reconstructed_image = cp.abs(U4)
 reconstructed_image = reconstructed_image / cp.max(reconstructed_image) * 255
 
-# 显示重建图像
+# show reconstructed image
 plt.imshow(cp.asnumpy(reconstructed_image), cmap='gray')
 plt.title('Reconstructed Image')
 plt.colorbar()
