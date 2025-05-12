@@ -15,7 +15,7 @@ z0 = 1200  # 衍射距离(mm)
 L0 = wavelength * z0 / pix  # 重建像平面宽度(mm)
 
 # 加载图像
-image_path = 'pku.jpg'
+image_path = 'BIT.jpg'
 image = Image.open(image_path).convert('L')
 image = image.resize((image_size, image_size))
 image_array = cp.array(image)
@@ -109,3 +109,10 @@ Ih = cp.asnumpy(Ih)
 hologram = Ih / cp.max(Ih) * 255
 hologram_image_save = Image.fromarray(hologram.astype(np.uint8))
 hologram_image_save.save('hologram_image.png')
+
+#保存重建图像
+Uf = cp.abs(Uf)
+Uf = cp.asnumpy(Uf)
+hologram = Uf / cp.max(Uf) * 255
+hologram_image_save = Image.fromarray(hologram.astype(np.uint8))
+hologram_image_save.save('reconstructed_image.png')

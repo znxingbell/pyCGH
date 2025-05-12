@@ -1,11 +1,13 @@
 from tqdm import tqdm
 import cupy as cp
+import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
 
 # 参数配置
 wave_length = 532e-9  # 波长(m)
-thetax, thetay = 0.9, 0.3  # 参考光角度(degree)
-M, N = 1024, 1024  # 全息图分辨率
+thetax, thetay = 0.2, 0.7  # 参考光角度(degree)
+M, N = 512, 512  # 全息图分辨率
 z = 1.2
 z_range = (z - 0.1, z + 0.1)  # 物体深度范围(m)
 pix = 24e-6  # 采样间隔(m)
@@ -41,8 +43,8 @@ for z_val in z_values:
 z_samples = z_values
 
 # 计算扩展参数
-max_x = cp.max(cp.abs(coordinate[:, 0]))
-max_y = cp.max(cp.abs(coordinate[:, 1]))
+max_x = cp.max(cp.abs(coordinate[:, 1]))
+max_y = cp.max(cp.abs(coordinate[:, 0]))
 padding_x = int(cp.ceil(max_x / pix))
 padding_y = int(cp.ceil(max_y / pix))
 M_new = M + padding_x * 2
@@ -66,7 +68,7 @@ reference_phase = k * (x_new * sin_theta_x + y_new * sin_theta_y)
 # 复振幅分布计算
 point_amount = coordinate.shape[0]
 for i in tqdm(range(point_amount), desc="全息图计算进度"):
-    x0, y0 = coordinate[i, 0], coordinate[i, 1]
+    x0, y0 = coordinate[i, 1], coordinate[i, 0]
     z_val = coordinate[i, 2]
 
     # 获取对应LUT相位
@@ -93,6 +95,8 @@ I = (interference - cp.min(interference)) / (cp.max(interference) - cp.min(inter
 plt.imshow(cp.asnumpy(I), cmap='gray')
 plt.title('LUT Optimized Hologram')
 plt.show()
+encoded_hologram_image = Image.fromarray((cp.asnumpy(I) * 255).astype(np.uint8))
+encoded_hologram_image.save('encoded_hologram0.png')
 
 # 重建图像
 k = 2 * cp.pi / wave_length
@@ -127,3 +131,5 @@ plt.imshow(cp.asnumpy(reconstructed_image), cmap='gray')
 plt.title('Reconstructed Image')
 plt.colorbar()
 plt.show()
+reconstructed_image_save = Image.fromarray(cp.asnumpy(reconstructed_image).astype(np.uint8))
+reconstructed_image_save.save('reconstructed_image0.png')

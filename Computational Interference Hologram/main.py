@@ -15,7 +15,7 @@ zoom = 50 # 缩放系数（调整此值以提高衬比度）
 
 
 # 加载图像
-image_path = 'pku.jpg'
+image_path = 'BIT.jpg'
 image = Image.open(image_path).convert('L')
 image = image.resize((image_size, image_size))
 image_array = np.array(image)
@@ -74,8 +74,8 @@ plt.colorbar()
 plt.show()
 
 # 保存编码后的全息图
-encoded_hologram_save = Image.fromarray((encoded_hologram_cpu).astype(np.uint8))
-encoded_hologram_save.save('encoded_hologram.png')
+encoded_hologram_save = Image.fromarray((encoded_hologram_cpu * 255).astype(np.uint8))
+encoded_hologram_save.save('encoded_hologram0.png')
 
 # 重建图像
 x = cp.linspace(-L/2, L/2, N)
@@ -108,4 +108,4 @@ plt.show()
 
 # 保存重建的图像
 reconstructed_image_save = Image.fromarray((reconstructed_image_cpu / np.max(reconstructed_image_cpu) * 255).astype(np.uint8))
-reconstructed_image_save.save('reconstructed_image.png')
+reconstructed_image_save.save('reconstructed_image0.png')

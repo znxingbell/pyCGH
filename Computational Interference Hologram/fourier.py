@@ -16,7 +16,7 @@ zoom = 1 # 缩放系数（调整此值以提高衬比度）
 
 
 # 加载图像
-image_path = 'pku.jpg'
+image_path = 'BIT.jpg'
 image = Image.open(image_path).convert('L')
 image = image.resize((image_size, image_size))
 image_array = np.array(image)
@@ -76,7 +76,7 @@ plt.colorbar()
 plt.show()
 
 # 保存编码后的全息图
-encoded_hologram_save = Image.fromarray((encoded_hologram_cpu).astype(np.uint8))
+encoded_hologram_save = Image.fromarray((encoded_hologram_cpu * 255).astype(np.uint8))
 encoded_hologram_save.save('encoded_hologram.png')
 
 #空间滤波

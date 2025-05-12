@@ -1,6 +1,8 @@
 from tqdm import tqdm
+import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
+from PIL import Image
 
 # parameters
 wave_len = 532e-9 #wavelength
@@ -67,9 +69,11 @@ I = (inf - cp.min(inf)) / (cp.max(inf) - cp.min(inf))
 plt.imshow(cp.asnumpy(I), cmap='gray')
 plt.title('S-LUT Hologram')
 plt.show()
+encoded_hologram_image = Image.fromarray((cp.asnumpy(I) * 255).astype(np.uint8))
+encoded_hologram_image.save('encoded_hologram.png')
 
 # reconstruct image
-L0 = wave_len * z / pix # 重建像平面宽度
+L0 = wave_len * z / pix
 I_1 = I
 I = I_1 - cp.mean(I_1)
 L = N * pix
@@ -92,6 +96,8 @@ plt.imshow(cp.asnumpy(reconstructed_image), cmap='gray')
 plt.title('Reconstructed Image')
 plt.colorbar()
 plt.show()
+reconstructed_image_save = Image.fromarray(cp.asnumpy(reconstructed_image).astype(np.uint8))
+reconstructed_image_save.save('reconstructed_image.png')
 
 
 
