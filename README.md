@@ -81,7 +81,7 @@
 
  GS 算法的主要思想就是通过控制全息图平面与成像平面的振幅信息，通过迭代运算使全息图相位分布得到优化。
  
- [代码](kinoform/main.py)
+[代码](kinoform/main.py)
  
  在这个程序中，你可以选择迭代的次数，观察它对全息图质量的影响。这里以10次为例展示效果。
 
@@ -89,42 +89,48 @@
 ![](kinoform/BIT.jpg)
 
 全息图效果
-![](kinoform\hologram_image.png)
+![](kinoform/hologram_image.png)
 
 重建效果
-![](kinoform\reconstructed_image.png)
+![](kinoform/reconstructed_image.png)
 
 接下来考虑对三维物体的全息图构建。
 
 ### 点源法
-三维物体可以抽象成一系列离散的点描述。这里通过[CloudCompare](https://www.cloudcompare.org/)软件导出纯文本形式的[点云数据](3D%20test\bun000%20-%20cloud.txt)。
+三维物体可以抽象成一系列离散的点描述。这里通过[CloudCompare](https://www.cloudcompare.org/)软件导出纯文本形式的[点云数据](3D%20test/bun000%20-%20cloud.txt)。
 
 将单个点的贡献对全息图平面线性叠加再进行编码即可得到三维物体对应的全息图，为了方便处理重建图像时选取一与全息图平行的平面进行观察。
 
+[代码](3D%20test/point.py)
+
 全息图效果
-![](3D%20test\hologram_image.png)
+![](3D%20test/hologram_image.png)
 
 重建效果
-![](3D%20test\reconstructed_image.png)
+![](3D%20test/reconstructed_image.png)
 
 ### N-LUT法
 注意到点源产生全息图的相似性，对于z坐标相同的点在全息图上的贡献实际等于在x=0，y=0的点元平移而来。通过适当数量的z轴切片在保留景深的同时大大提高了计算效率。
+[代码](LUT/start.py)
 
 全息图效果
-![](LUT\encoded_hologram0.png)
+![](LUT/encoded_hologram0.png)
 
 重建效果
-![](LUT\reconstructed_image0.png)
+![](LUT/reconstructed_image0.png)
 
 (此处重建算法存在一定问题导致图像被拉伸)
 ### S-LUT法
 为了提高成像质量N-LUT法不得不保存大量切片，这对内存空间的占用提出了极大的挑战。S-LUT算法通过x，y轴的独立性将数据分别存储，实现了LUT的压缩效果。
 
+[代码](LUT/s-lut.py)
+
+
 全息图效果
-![](LUT\encoded_hologram.png)
+![](LUT/encoded_hologram.png)
 
 重建效果
-![](LUT\reconstructed_image.png)
+![](LUT/reconstructed_image.png)
 
 ## 计划
-暂无。
+等待编写。
